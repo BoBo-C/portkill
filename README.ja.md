@@ -57,7 +57,7 @@ xattr -cr /Applications/PortKill.app
 
 - ポート一覧:Rust 側で `lsof -nP -iTCP -sTCP:LISTEN -F pcn` を解析。IPv4/IPv6 の重複は除去
 - メモリ:更新ごとに `ps -o pid=,rss=` を 1 回だけ実行してまとめて取得
-- Kill:シンプルに `SIGKILL` — 固まった dev server には これが一番
+- Kill:まず `SIGTERM` でクリーンアップの猶予を与え、500ms 以内に終了しない場合のみ `SIGKILL` へ。シグナル送信直前に pid/ポートを再検証(PID 再利用対策)
 - フルスクリーン対応:[tauri-nspanel](https://github.com/ahkohd/tauri-nspanel) でウィンドウを非アクティブ化 `NSPanel` に変換(`CanJoinAllSpaces` + `FullScreenAuxiliary`)
 
 ## ソースからビルド

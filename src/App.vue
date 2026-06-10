@@ -67,7 +67,8 @@ async function kill(entry) {
   killingPids.value = new Set(killingPids.value);
   error.value = "";
   try {
-    await invoke("kill_process", { pid: entry.pid });
+    // Port passed along so Rust can revalidate (pid-reuse race guard)
+    await invoke("kill_process", { pid: entry.pid, port: entry.port });
     // Small delay so the OS releases the socket before we re-query
     await new Promise((r) => setTimeout(r, 150));
     await refresh();

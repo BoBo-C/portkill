@@ -57,7 +57,7 @@ xattr -cr /Applications/PortKill.app
 
 - 端口列表:Rust 侧解析 `lsof -nP -iTCP -sTCP:LISTEN -F pcn`,IPv4/IPv6 重复项去重
 - 内存:每次刷新只调一次 `ps -o pid=,rss=` 批量获取
-- Kill:直接 `SIGKILL` —— 快而干脆,对付卡死的 dev server 正合适
+- Kill:先发 `SIGTERM` 给进程清理的机会,500ms 内未退出再升级 `SIGKILL`;发信号前会重新校验 pid/端口,避免 PID 复用误杀
 - 全屏支持:窗口通过 [tauri-nspanel](https://github.com/ahkohd/tauri-nspanel) 转为非激活 `NSPanel`(`CanJoinAllSpaces` + `FullScreenAuxiliary`)
 
 ## 从源码构建

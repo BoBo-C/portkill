@@ -14,8 +14,8 @@ fn list_ports() -> Result<Vec<ports::PortEntry>, String> {
 }
 
 #[tauri::command]
-fn kill_process(pid: u32) -> Result<(), String> {
-    ports::kill_pid(pid)
+fn kill_process(pid: u32, port: u16) -> Result<(), String> {
+    ports::kill_pid_on_port(pid, port)
 }
 
 #[tauri::command]

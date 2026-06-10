@@ -57,7 +57,7 @@ Click the ⚡ icon in the menu bar. The list refreshes every time the panel open
 
 - Port list: `lsof -nP -iTCP -sTCP:LISTEN -F pcn`, parsed in Rust; IPv4/IPv6 duplicates deduped
 - Memory: one batched `ps -o pid=,rss=` call per refresh
-- Kill: plain `SIGKILL` — fast and final, which is exactly what you want for a stuck dev server
+- Kill: `SIGTERM` first so the process gets a chance to clean up, escalating to `SIGKILL` if it's still alive after 500ms; the pid/port pair is revalidated right before signaling
 - Fullscreen support: the window is swizzled to a non-activating `NSPanel` (`CanJoinAllSpaces` + `FullScreenAuxiliary`) via [tauri-nspanel](https://github.com/ahkohd/tauri-nspanel)
 
 ## Build from source

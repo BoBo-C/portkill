@@ -126,21 +126,60 @@ pub fn list_listening_ports() -> Result<Vec<PortEntry>, String> {
     Ok(entries)
 }
 
-/// Kill a process with SIGKILL.
-pub fn kill_pid(pid: u32) -> Result<(), String> {
+fn signal(pid: u32, sig: &str) -> bool {
+    Command::new("/bin/kill")
+        .args([sig, &pid.to_string()])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+/// `kill -0`: true if the process exists and we may signal it.
+fn alive(pid: u32) -> bool {
+    signal(pid, "-0")
+}
+
+/// Kill gracefully: SIGTERM first so the process can flush/clean up,
+/// escalate to SIGKILL only if it's still alive after ~500ms.
+///
+/// `port` guards against pid-reuse races: we re-check that this pid still
+/// listens on this port before sending anything.
+pub fn kill_pid_on_port(pid: u32, port: u16) -> Result<(), String> {
     if pid == 0 {
         return Err("invalid pid".into());
     }
-    let status = Command::new("/bin/kill")
-        .args(["-9", &pid.to_string()])
-        .status()
-        .map_err(|e| format!("failed to run kill: {e}"))?;
 
-    if status.success() {
-        Ok(())
+    // Revalidate (pid, port) — the process may have exited since the list
+    // was rendered and the pid could even have been reused.
+    let still_listening = list_listening_ports()?
+        .iter()
+        .any(|e| e.pid == pid && e.port == port);
+    if !still_listening {
+        return Err(format!(
+            "process {pid} no longer listens on port {port} — refresh the list"
+        ));
+    }
+
+    if !signal(pid, "-TERM") {
+        return Err(format!(
+            "cannot signal pid {pid} (it may belong to another user or root)"
+        ));
+    }
+
+    // Give it up to 500ms to exit cleanly
+    for _ in 0..10 {
+        std::thread::sleep(std::time::Duration::from_millis(50));
+        if !alive(pid) {
+            return Ok(());
+        }
+    }
+
+    // Still alive — force kill
+    signal(pid, "-KILL");
+    std::thread::sleep(std::time::Duration::from_millis(50));
+    if alive(pid) {
+        Err(format!("pid {pid} survived SIGKILL"))
     } else {
-        Err(format!(
-            "kill failed for pid {pid} (it may require higher privileges or already exited)"
-        ))
+        Ok(())
     }
 }
