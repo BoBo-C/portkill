@@ -1,6 +1,6 @@
 [package]
 name = "portkill"
-version = "0.1.0"
+version = "0.1.2"
 description = "Menu bar tool to find and kill processes listening on ports"
 authors = ["willpower"]
 edition = "2021"
